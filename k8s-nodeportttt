@@ -1,0 +1,243 @@
+  sudo -i
+nano install.sh
+curl https://get.docker.com/ | bash
+sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+
+sh install.sh
+rm /etc/containerd/config.toml
+systemctl restart containerd
+kubeadm init --pod-network-cidr 192.168.0.0/16
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+curl https://docs.projectcalico.org/manifests/calico.yaml -O
+kubectl apply -f calico.yaml
+kubectl get pods -A
+kubectl get nodes 
+kubectl get pods -A
+
+
+
+kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
+
+
+
+(IN WORKERNODE1)
+
+sudo -i
+nano install.sh
+curl https://get.docker.com/ | bash
+sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+sh install.sh
+rm /etc/containerd/config.toml
+systemctl restart containerd
+kubeadm join 172.31.21.134:6443 --token yg4wxy.5g22s4yo1ihopwqh \
+        --discovery-token-ca-cert-hash sha256:b0fbcc74b802e1f6f882978aa2e2ffc63e255c2830148ee3848b3bac120edc76
+
+
+
+(IN MASTER )
+ kubectl get nodes
+kubectl get pods -A      or  kubectl get pods --all-namespaces
+  kubectl get pods -A -o wide
+
+kubectl create namespace dev
+kubectl get namespace
+kubectl create ns stage
+kubectl get ns
+kubectl create ns poornima-shinde
+kubectl get ns
+ 
+
+(SIMPLE YML FILE CREATE)
+vi namespace.yml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+  labels:
+    name: development
+
+kubectl create -f namespace.yml
+kubectl get ns
+-----------------------------------------------------------------------------------------------------------
+vi pod1.yml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testpod
+spec:
+  containers:
+    - name: c00
+      image: ubuntu
+      command: ["/bin/bash", "-c", "while true; do echo Hello-Poornima; sleep 5 ; done"]
+    - name: c01
+      image: httpd
+      ports:
+       - containerPort: 80
+
+kubectl apply -f pod1.yml
+kubectl get pods
+kubectl exec testpod -it c c00 -- /bin/bash
+apt update && apt install curl
+curl localhost:80
+
+(U WANT TO DELETE THIS FILE , THAN USE THIS COMMAND)
+kubectl delete -f pod1.yml
+-----------------------------------------------------------------------------------------------------------------
+(1 NODE INSIDE 2 PODS CREATE)
+vi pod2.yml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testpod1
+spec:
+  containers:
+    - name: c02
+      image: nginx
+      ports:
+       - containerPort: 80
+
+
+
+vi pod3.yml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testpod12
+spec:
+  containers:
+    - name: c03
+      image: httpd
+      ports:
+       - containerPort: 80
+
+kubectl apply -f pod2.yml
+kubectl apply -f pod3.yml
+
+kubectl get pods
+kubectl get pods -o wide
+curl (PASTE THE IP)
+CURL (PASTE THE IP_
+--------------------------------------------------------------------------------------------
+vi deployhttpd.yml
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: mydeployments
+spec:
+   replicas: 1
+   selector:      # tells the controller which pods to watch/belong to
+    matchLabels:
+     name: deployment
+   template:
+     metadata:
+       name: testpod1
+       labels:
+         name: deployment
+     spec:
+      containers:
+        - name: c00
+          image: httpd
+          ports:
+          - containerPort: 80
+
+kubectl apply -f deployhttpd.yml
+kubectl get pods
+kubectl get pods -o wide
+curl (paste ip):80
+  --------------------------------------------------
+
+
+vi service.yml
+kind: Service                             # Defines to create Service type Object
+apiVersion: v1
+metadata:
+  name: demoservice
+spec:
+  ports:
+    - port: 80                               # Containers port exposed
+      targetPort: 80                     # Pods port
+  selector:
+    name: deployment                    # Apply this service to any pods which has the specific label
+  type: ClusterIP                       # Specifies the service type i.e ClusterIP or NodePort
+
+
+
+kubectl apply -f service.yml
+kubectl get svc
+curl (PASTE IP)
+
+
+
+-----------------------------------------------------------------------------------------------------------
+(NODE PORT)
+vi deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpd-deployment-nautilus
+  namespace: httpd-namespace-nautilus
+  labels:
+    app: httpd_app_nautilus
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: httpd_app_nautilus
+  template:
+    metadata:
+      labels:
+        app: httpd_app_nautilus
+    spec:
+      containers:
+        - name: httpd-container-nautilus
+          image: httpd:latest
+          ports:
+            - containerPort: 80
+
+
+vi nodeport.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpd-service-nautilus
+  namespace: httpd-namespace-nautilus
+spec:
+  type: NodePort
+  selector:
+    app: httpd_app_nautilus
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30004
+
+kubectl create ns httpd-namespace-nautilus
+ 
+kubectl apply -f deployment.yml -n httpd-namespace-nautilus
+kubectl apply -f nodeport.yml -n httpd-namespace-nautilus
+
+
+
+kubectl get svc
+(IPV DNC IP PASTE IN CROME TAKE TO INSTANCE)
+
+
+
+
+
+
